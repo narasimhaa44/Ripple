@@ -1,0 +1,156 @@
+:root {
+  --page: #F5EFE3;
+  --panel: #FBF8F1;
+  --panel-muted: #EEE6D8;
+  --panel-hover: #F6EFE2;
+  --border: #CDBB9F;
+  --border-light: #DFD3BF;
+  --text: #24231F;
+  --muted: #716B60;
+  --muted-light: #9C9486;
+  --green: #347A4A;
+  --green-light: #E9F4EC;
+  --green-border: #B2D8BD;
+  --red: #F04432;
+  --red-light: #FDECE9;
+  --red-border: #F7B5AD;
+  --orange: #FF922E;
+  --orange-light: #FFF4E5;
+  --orange-border: #FFD4A8;
+  --blue: #507CA6;
+  --blue-light: #EBF2F8;
+  --blue-border: #BDD2E6;
+
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background-color: var(--page);
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--page);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, .metric-value, .brand-name, .font-display {
+  font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all 0.18s ease;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--panel-muted);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Animations */
+@keyframes pulseHalo {
+  0% {
+    box-shadow: 0 0 0 0 rgba(240, 68, 50, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(240, 68, 50, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(240, 68, 50, 0);
+  }
+}
+
+@keyframes rippleWave {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes dashFlow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dashFlowVertical {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.28s ease-out forwards;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.ripple-pulsing {
+  animation: pulseHalo 2s infinite;
+}
