@@ -40,7 +40,7 @@ export default function Header({ health, onRefreshHealth }) {
 
         <div
           className={`status-badge ${isApiConnected ? "connected" : "offline"}`}
-          title={isApiConnected ? "Backend API is online at localhost:5000" : "Backend API unavailable"}
+          title={isApiConnected ? "Backend API is online" : "Backend API unavailable"}
           onClick={onRefreshHealth}
           style={{ cursor: "pointer" }}
         >
