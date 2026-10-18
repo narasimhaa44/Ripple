@@ -1,34 +1,32 @@
 
-// import { FalkorDB } from "falkordb";
-
-// const db = await FalkorDB.connect({
-//     host: process.env.FALKORDB_HOST || "127.0.0.1",
-//     port: Number(process.env.FALKORDB_PORT || 6379),
-// });
-
-// export const graph = db.selectGraph("ripple");
-
-// export async function closeDatabase() {
-//     await db.close();
-// }
-
-
+import "dotenv/config";
 import { FalkorDB } from "falkordb";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const prefix = isProduction ? "CLOUD_FALKORDB" : "FALKORDB";
+
+const host = process.env[`${prefix}_HOST`];
+const port = process.env[`${prefix}_PORT`];
+const username = process.env[`${prefix}_USERNAME`];
+const password = process.env[`${prefix}_PASSWORD`];
+const tls = process.env[`${prefix}_TLS`];
+
+if (!host || !port) {
+    throw new Error(
+        `Missing ${prefix}_HOST or ${prefix}_PORT environment variable`
+    );
+}
+
 const connectionOptions = {
-    host: process.env.FALKORDB_HOST || "127.0.0.1",
-    port: Number(process.env.FALKORDB_PORT || 6379),
+    host,
+    port: Number(port),
 };
 
-if (process.env.FALKORDB_USERNAME) {
-    connectionOptions.username = process.env.FALKORDB_USERNAME;
-}
+if (username) connectionOptions.username = username;
+if (password) connectionOptions.password = password;
 
-if (process.env.FALKORDB_PASSWORD) {
-    connectionOptions.password = process.env.FALKORDB_PASSWORD;
-}
-
-if (process.env.FALKORDB_TLS === "true") {
+if (tls === "true") {
     connectionOptions.socket = { tls: true };
 }
 
