@@ -22,24 +22,98 @@ function getGroqClient() {
     return groqClient;
 }
 
-async function getGroqTools() {
-    // Discover the real tools from the MCP server.
-    const mcpTools = await discoverMcpTools();
-
-    const graphTools = mcpTools.map((tool) => ({
+export const tools = [
+    {
         type: "function",
         function: {
-            name: tool.name,
-            description: tool.description || tool.name,
-            parameters: tool.inputSchema || {
+            name: "list_services",
+            description: "List all services in the graph database.",
+            parameters: {
                 type: "object",
                 properties: {},
             },
         },
-    }));
-
-    // Keep the existing incident search as a local tool for now.
-    const incidentTool = {
+    },
+    {
+        type: "function",
+        function: {
+            name: "analyze_impact",
+            description: "Analyze which services are affected if a service fails. Choose maxHops from 1 to 5.",
+            parameters: {
+                type: "object",
+                properties: {
+                    serviceId: { type: "string", description: "Exact service ID from list_services" },
+                    maxHops: { type: "number", description: "Max hops (1-5)" },
+                },
+                required: ["serviceId"],
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_dependency_path",
+            description:
+                "Find graph evidence connecting two services. MUST use this tool when the user asks how one named service can affect another, requests a dependency path, or asks to explain a multi-hop relationship. Use exact IDs from list_services.",
+            parameters: {
+                type: "object",
+                properties: {
+                    fromServiceId: {
+                        type: "string",
+                        description: "Exact ID of the starting service."
+                    },
+                    toServiceId: {
+                        type: "string",
+                        description: "Exact ID of the destination service."
+                    }
+                },
+                required: ["fromServiceId", "toServiceId"],
+                additionalProperties: false
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_workflows",
+            description: "List workflows and the services they require. Optionally filter by service IDs.",
+            parameters: {
+                type: "object",
+                properties: {
+                    serviceIds: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Filter by service IDs"
+                    }
+                }
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_centrality",
+            description: "Calculate degree centrality for services in the graph to identify critical infrastructure hubs.",
+            parameters: {
+                type: "object",
+                properties: {
+                    serviceId: { type: "string", description: "Optional service ID" }
+                }
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_graph_summary",
+            description: "Return counts of nodes by label and relationships by type in the Ripple FalkorDB graph.",
+            parameters: {
+                type: "object",
+                properties: {}
+            }
+        }
+    },
+    {
         type: "function",
         function: {
             name: "search_incidents",
@@ -57,12 +131,73 @@ async function getGroqTools() {
                 additionalProperties: false,
             },
         },
-    };
+    },
+];
 
-    return [...graphTools, incidentTool];
+async function getGroqTools() {
+    // Discover the real tools from the MCP server.
+    try {
+        const mcpTools = await discoverMcpTools();
+
+        const graphTools = mcpTools.map((tool) => ({
+            type: "function",
+            function: {
+                name: tool.name,
+                description: tool.description || tool.name,
+                parameters: tool.inputSchema || {
+                    type: "object",
+                    properties: {},
+                },
+            },
+        }));
+
+        const incidentTool = {
+            type: "function",
+            function: {
+                name: "search_incidents",
+                description:
+                    "Search available incident records for a service. Report only evidence actually returned by the incident service.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        serviceId: {
+                            type: "string",
+                            description: "Exact service ID from the graph.",
+                        },
+                    },
+                    required: ["serviceId"],
+                    additionalProperties: false,
+                },
+            },
+        };
+
+        return [...graphTools, incidentTool];
+    } catch {
+        return tools;
+    }
 }
 
 async function executeTool(name, args) {
+    if (name === "get_dependency_path") {
+        if (
+            typeof args.fromServiceId !== "string" ||
+            typeof args.toServiceId !== "string"
+        ) {
+            throw new Error(
+                "Both source and destination service IDs are required."
+            );
+        }
+
+        return await callMcpTool("get_dependency_path", {
+            fromServiceId: args.fromServiceId,
+            toServiceId: args.toServiceId
+        });
+    }
+
+    if (name === "get_workflows") {
+        return await callMcpTool("get_workflows", args || {});
+    }
+
     // Incident search remains local; graph tools go through MCP.
     if (name === "search_incidents") {
         if (
@@ -110,7 +245,7 @@ async function executeTool(name, args) {
     }
 }
 
-function buildStructuredSummary(impact, incident) {
+function buildStructuredSummary(impact, incident, pathData = null) {
     const failedName = impact.failedService.name;
     const isIncidentFound = incident?.hasIncident === true;
 
@@ -136,7 +271,13 @@ function buildStructuredSummary(impact, incident) {
             `- **${s.name}** — ${s.hops} hop(s), **${s.severity}**; heuristic score: ${s.riskScore}/100.`
     ).join("\n");
 
-    const pathsLines = impact.affectedServices.length > 0
+    const connectingPathsLines = pathData?.paths?.length > 0
+        ? pathData.paths
+            .map((p) => `- ${p.path.join(" → ")} (${p.hops} hop(s))`)
+            .join("\n")
+        : null;
+
+    const standardPathsLines = impact.affectedServices.length > 0
         ? impact.affectedServices
             .map(
                 (s) =>
@@ -144,6 +285,12 @@ function buildStructuredSummary(impact, incident) {
             )
             .join("\n")
         : `- ${failedName}: no downstream dependent services identified within the analyzed range.`;
+
+    const pathsLines = connectingPathsLines
+        ? (standardPathsLines && !standardPathsLines.includes("no downstream")
+            ? `${connectingPathsLines}\n${standardPathsLines}`
+            : connectingPathsLines)
+        : standardPathsLines;
 
     const workflowSummary = impact.affectedWorkflows.length > 0
         ? impact.affectedWorkflows
@@ -301,20 +448,41 @@ export async function askRipple(question, serviceId) {
         result: { services },
     };
 
-    // 2. Identify target service ID
+    // 2. Identify target and destination service IDs
     let targetId = serviceId;
-    if (!targetId) {
-        const matched = services.find((s) => {
+    let destinationId = null;
+
+    const mentionedServices = services.filter((s) => {
+        const baseName = s.name.toLowerCase().replace(/\s+service$/i, "");
+        return (
+            qLower.includes(s.name.toLowerCase()) ||
+            qLower.includes(s.id.toLowerCase()) ||
+            qLower.includes(baseName)
+        );
+    });
+
+    if (mentionedServices.length === 1 && !targetId) {
+        targetId = mentionedServices[0].id;
+    } else if (mentionedServices.length >= 2) {
+        const sourceMatch = mentionedServices.find((s) => {
             const baseName = s.name.toLowerCase().replace(/\s+service$/i, "");
-            return (
-                qLower.includes(s.name.toLowerCase()) ||
-                qLower.includes(s.id.toLowerCase()) ||
-                qLower.includes(baseName)
-            );
+            const pattern = new RegExp(`(?:if\\s+(?:the\\s+)?|when\\s+(?:the\\s+)?|from\\s+|source\\s+)?(?:${s.name.toLowerCase()}|${baseName})\\s+(?:fails|failure|down|outage|breaks)`, "i");
+            return pattern.test(qLower);
         });
 
-        if (matched) {
-            targetId = matched.id;
+        const destMatch = mentionedServices.find((s) => {
+            const baseName = s.name.toLowerCase().replace(/\s+service$/i, "");
+            const pattern = new RegExp(`(?:affect(?:s|ing)?|impact(?:s|ing)?|to(?:wards)?|reach(?:es)?)\\s+(?:the\\s+)?(?:${s.name.toLowerCase()}|${baseName})`, "i");
+            return pattern.test(qLower);
+        });
+
+        if (sourceMatch && destMatch && sourceMatch.id !== destMatch.id) {
+            targetId = targetId || sourceMatch.id;
+            destinationId = destMatch.id;
+        } else {
+            targetId = targetId || mentionedServices[0].id;
+            const other = mentionedServices.find((s) => s.id !== targetId);
+            if (other) destinationId = other.id;
         }
     }
 
@@ -405,6 +573,38 @@ I couldn't identify which service to investigate from your question.
         result: incident,
     };
 
+    // If destination service is identified or dependency path is requested, invoke get_dependency_path
+    let pathData = null;
+    let pathTrace = null;
+    if (destinationId && targetId !== destinationId) {
+        try {
+            const rawPathRes = await executeTool("get_dependency_path", {
+                fromServiceId: targetId,
+                toServiceId: destinationId,
+            });
+            let parsed = rawPathRes;
+            if (rawPathRes?.content?.[0]?.text) {
+                try {
+                    parsed = JSON.parse(rawPathRes.content[0].text);
+                } catch { }
+            }
+            pathData = parsed;
+            const pathCount = pathData?.paths?.length || 0;
+            const targetName = services.find((s) => s.id === targetId)?.name || targetId;
+            const destName = services.find((s) => s.id === destinationId)?.name || destinationId;
+            pathTrace = {
+                name: "get_dependency_path",
+                args: { fromServiceId: targetId, toServiceId: destinationId },
+                summary: pathCount > 0
+                    ? `Found ${pathCount} connecting path(s) between ${targetName} and ${destName}.`
+                    : `No connecting paths found within 5 hops.`,
+                result: pathData,
+            };
+        } catch (err) {
+            console.warn("MCP get_dependency_path failed:", err.message);
+        }
+    }
+
     const toolTraces = [listTrace, impactTrace, incidentTrace];
     const executedTools = [
         listTrace.name,
@@ -412,12 +612,18 @@ I couldn't identify which service to investigate from your question.
         `search_incidents(${targetId})`,
     ];
 
+    if (pathTrace) {
+        toolTraces.push(pathTrace);
+        executedTools.push(`get_dependency_path(${targetId}, ${destinationId})`);
+    }
+
     // If Groq is not configured, return deterministic fallback summary
     if (!client) {
         return {
-            answer: buildStructuredSummary(impact, incident),
+            answer: buildStructuredSummary(impact, incident, pathData),
             impact,
             incident,
+            paths: pathData?.paths || [],
             aiProvider: "fallback-graph",
             toolsUsed: executedTools,
             toolTraces,
@@ -440,6 +646,21 @@ Evidence and reporting rules:
 - If a root-cause is described as a HYPOTHESIS or Unverified, you MUST report it strictly as an unverified hypothesis, NEVER as a confirmed root cause.
 - Only report timestamps, deployments, logs, and durations present in the provided evidence. If downtime recovery is not recorded, state that duration is not established.
 - Clearly distinguish graph-derived modeled facts from local incident records.
+
+Tool-use instructions:
+1. Use list_services to verify available service IDs in the graph.
+2. Use analyze_impact to calculate the blast radius of a failed service.
+3. Use search_incidents to search available local incident records for a service.
+4. Use get_workflows to discover business workflows requiring a service.
+5. When the user asks how one named service can affect another,
+   call get_dependency_path with both exact service IDs.
+6. For a question about a simulated failure, use analyze_impact
+   for the blast radius and get_dependency_path for the requested
+   source-to-destination evidence path.
+7. Never claim that no connecting path exists unless the
+   dependency-path tool has returned an empty paths array.
+8. Clearly distinguish graph-modeled dependencies from verified
+   production failures or live telemetry.
 
 Format your response concisely matching this exact structure:
 
@@ -505,6 +726,12 @@ ${
               .join("\n")
         : "  * None"
 }
+- Connecting Paths (from get_dependency_path):
+${
+    pathData?.paths?.length > 0
+        ? pathData.paths.map((p) => `  * ${p.path.join(" → ")} (${p.hops} hop(s))`).join("\n")
+        : "  * None found within 5 hops."
+}
 - Affected Workflows: ${impact.affectedWorkflows.length > 0 ? impact.affectedWorkflows.map((w) => `${w.name} (${w.severity})`).join(", ") : "None"}
 - Recommendations: ${JSON.stringify(impact.recommendations || [])}
 - Local Incident Record:
@@ -536,6 +763,7 @@ ${
             answer,
             impact,
             incident,
+            paths: pathData?.paths || [],
             aiProvider: "groq",
             toolsUsed: executedTools,
             toolTraces,
@@ -544,9 +772,10 @@ ${
         console.error("Groq agent completion failed, using prefetched fallback:", error.message);
 
         return {
-            answer: buildStructuredSummary(impact, incident),
+            answer: buildStructuredSummary(impact, incident, pathData),
             impact,
             incident,
+            paths: pathData?.paths || [],
             aiProvider: "fallback-graph",
             toolsUsed: executedTools,
             toolTraces,
