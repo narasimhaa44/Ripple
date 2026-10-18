@@ -1,0 +1,531 @@
+{
+  "nodes": [
+    {
+      "labels": [
+        "Service"
+      ],
+      "props": {
+        "id": "svc-payment",
+        "name": "Payment Service",
+        "criticality": 5
+      }
+    },
+    {
+      "labels": [
+        "Service"
+      ],
+      "props": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      }
+    },
+    {
+      "labels": [
+        "Service"
+      ],
+      "props": {
+        "id": "svc-inventory",
+        "name": "Inventory Service",
+        "criticality": 4
+      }
+    },
+    {
+      "labels": [
+        "Service"
+      ],
+      "props": {
+        "id": "svc-notification",
+        "name": "Notification Service",
+        "criticality": 2
+      }
+    },
+    {
+      "labels": [
+        "Service"
+      ],
+      "props": {
+        "id": "svc-auth",
+        "name": "Authentication Service",
+        "criticality": 5
+      }
+    },
+    {
+      "labels": [
+        "Service"
+      ],
+      "props": {
+        "id": "svc-catalog",
+        "name": "Product Catalog Service",
+        "criticality": 3
+      }
+    },
+    {
+      "labels": [
+        "Service"
+      ],
+      "props": {
+        "id": "svc-shipping",
+        "name": "Shipping Service",
+        "criticality": 4
+      }
+    },
+    {
+      "labels": [
+        "Service"
+      ],
+      "props": {
+        "id": "svc-analytics",
+        "name": "Analytics Service",
+        "criticality": 2
+      }
+    },
+    {
+      "labels": [
+        "Database"
+      ],
+      "props": {
+        "id": "db-orders",
+        "name": "Orders Database"
+      }
+    },
+    {
+      "labels": [
+        "Database"
+      ],
+      "props": {
+        "id": "db-payments",
+        "name": "Payments Database"
+      }
+    },
+    {
+      "labels": [
+        "Database"
+      ],
+      "props": {
+        "id": "db-inventory",
+        "name": "Inventory Database"
+      }
+    },
+    {
+      "labels": [
+        "API"
+      ],
+      "props": {
+        "id": "api-payment",
+        "name": "Payment API"
+      }
+    },
+    {
+      "labels": [
+        "API"
+      ],
+      "props": {
+        "id": "api-order",
+        "name": "Order API"
+      }
+    },
+    {
+      "labels": [
+        "Workflow"
+      ],
+      "props": {
+        "id": "wf-checkout",
+        "name": "Customer Checkout",
+        "criticality": 5
+      }
+    },
+    {
+      "labels": [
+        "Workflow"
+      ],
+      "props": {
+        "id": "wf-fulfillment",
+        "name": "Order Fulfillment",
+        "criticality": 4
+      }
+    },
+    {
+      "labels": [
+        "Workflow"
+      ],
+      "props": {
+        "id": "wf-alerts",
+        "name": "Customer Notifications",
+        "criticality": 2
+      }
+    },
+    {
+      "labels": [
+        "Team"
+      ],
+      "props": {
+        "id": "team-commerce",
+        "name": "Commerce Team"
+      }
+    },
+    {
+      "labels": [
+        "Team"
+      ],
+      "props": {
+        "id": "team-platform",
+        "name": "Platform Team"
+      }
+    },
+    {
+      "labels": [
+        "Team"
+      ],
+      "props": {
+        "id": "team-ops",
+        "name": "Operations Team"
+      }
+    },
+    {
+      "labels": [
+        "Queue"
+      ],
+      "props": {
+        "id": "queue-events",
+        "name": "Order Events Queue"
+      }
+    },
+    {
+      "labels": [
+        "ExternalSystem"
+      ],
+      "props": {
+        "id": "ext-email",
+        "name": "Email Provider"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "source": {
+        "id": "svc-payment",
+        "name": "Payment Service",
+        "criticality": 5
+      },
+      "type": "READS_FROM",
+      "props": {},
+      "target": {
+        "id": "db-payments",
+        "name": "Payments Database"
+      }
+    },
+    {
+      "source": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      },
+      "type": "DEPENDS_ON",
+      "props": {},
+      "target": {
+        "id": "svc-payment",
+        "name": "Payment Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      },
+      "type": "DEPENDS_ON",
+      "props": {},
+      "target": {
+        "id": "svc-inventory",
+        "name": "Inventory Service",
+        "criticality": 4
+      }
+    },
+    {
+      "source": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      },
+      "type": "DEPENDS_ON",
+      "props": {},
+      "target": {
+        "id": "svc-auth",
+        "name": "Authentication Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      },
+      "type": "DEPENDS_ON",
+      "props": {},
+      "target": {
+        "id": "svc-catalog",
+        "name": "Product Catalog Service",
+        "criticality": 3
+      }
+    },
+    {
+      "source": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      },
+      "type": "READS_FROM",
+      "props": {},
+      "target": {
+        "id": "db-orders",
+        "name": "Orders Database"
+      }
+    },
+    {
+      "source": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      },
+      "type": "CALLS",
+      "props": {},
+      "target": {
+        "id": "api-payment",
+        "name": "Payment API"
+      }
+    },
+    {
+      "source": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      },
+      "type": "CALLS",
+      "props": {},
+      "target": {
+        "id": "api-order",
+        "name": "Order API"
+      }
+    },
+    {
+      "source": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      },
+      "type": "PUBLISHES_TO",
+      "props": {},
+      "target": {
+        "id": "queue-events",
+        "name": "Order Events Queue"
+      }
+    },
+    {
+      "source": {
+        "id": "svc-inventory",
+        "name": "Inventory Service",
+        "criticality": 4
+      },
+      "type": "READS_FROM",
+      "props": {},
+      "target": {
+        "id": "db-inventory",
+        "name": "Inventory Database"
+      }
+    },
+    {
+      "source": {
+        "id": "svc-notification",
+        "name": "Notification Service",
+        "criticality": 2
+      },
+      "type": "DEPENDS_ON",
+      "props": {},
+      "target": {
+        "id": "svc-payment",
+        "name": "Payment Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "svc-notification",
+        "name": "Notification Service",
+        "criticality": 2
+      },
+      "type": "INTEGRATES_WITH",
+      "props": {},
+      "target": {
+        "id": "ext-email",
+        "name": "Email Provider"
+      }
+    },
+    {
+      "source": {
+        "id": "svc-shipping",
+        "name": "Shipping Service",
+        "criticality": 4
+      },
+      "type": "DEPENDS_ON",
+      "props": {},
+      "target": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "svc-analytics",
+        "name": "Analytics Service",
+        "criticality": 2
+      },
+      "type": "DEPENDS_ON",
+      "props": {},
+      "target": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "wf-checkout",
+        "name": "Customer Checkout",
+        "criticality": 5
+      },
+      "type": "REQUIRES",
+      "props": {},
+      "target": {
+        "id": "svc-payment",
+        "name": "Payment Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "wf-checkout",
+        "name": "Customer Checkout",
+        "criticality": 5
+      },
+      "type": "REQUIRES",
+      "props": {},
+      "target": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "wf-checkout",
+        "name": "Customer Checkout",
+        "criticality": 5
+      },
+      "type": "REQUIRES",
+      "props": {},
+      "target": {
+        "id": "svc-auth",
+        "name": "Authentication Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "wf-fulfillment",
+        "name": "Order Fulfillment",
+        "criticality": 4
+      },
+      "type": "REQUIRES",
+      "props": {},
+      "target": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "wf-fulfillment",
+        "name": "Order Fulfillment",
+        "criticality": 4
+      },
+      "type": "REQUIRES",
+      "props": {},
+      "target": {
+        "id": "svc-inventory",
+        "name": "Inventory Service",
+        "criticality": 4
+      }
+    },
+    {
+      "source": {
+        "id": "wf-alerts",
+        "name": "Customer Notifications",
+        "criticality": 2
+      },
+      "type": "REQUIRES",
+      "props": {},
+      "target": {
+        "id": "svc-notification",
+        "name": "Notification Service",
+        "criticality": 2
+      }
+    },
+    {
+      "source": {
+        "id": "team-commerce",
+        "name": "Commerce Team"
+      },
+      "type": "OWNS",
+      "props": {},
+      "target": {
+        "id": "svc-order",
+        "name": "Order Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "team-platform",
+        "name": "Platform Team"
+      },
+      "type": "OWNS",
+      "props": {},
+      "target": {
+        "id": "svc-payment",
+        "name": "Payment Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "team-platform",
+        "name": "Platform Team"
+      },
+      "type": "OWNS",
+      "props": {},
+      "target": {
+        "id": "svc-auth",
+        "name": "Authentication Service",
+        "criticality": 5
+      }
+    },
+    {
+      "source": {
+        "id": "team-ops",
+        "name": "Operations Team"
+      },
+      "type": "OWNS",
+      "props": {},
+      "target": {
+        "id": "svc-shipping",
+        "name": "Shipping Service",
+        "criticality": 4
+      }
+    }
+  ]
+}

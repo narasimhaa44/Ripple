@@ -91,6 +91,13 @@ The graph is an active part of the investigation workflow: its relationships det
 
 ## Architecture
 
+### Project flowchart
+
+The project flowchart below is included from the image file `FlowChart.png` in the repository root. Keep `FlowChart.png` in the same folder as this `README.md` so GitHub can render it.
+
+![RIPPLE project flowchart](./FlowChart.png)
+
+
 ```text
                         User
                          |
@@ -579,11 +586,9 @@ Never commit `.env` or a real API key. Keep `.env.example` free of secrets.
 ### 1. Clone the repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
-cd YOUR_REPOSITORY_DIRECTORY
+git clone https://github.com/narasimhaa44/Ripple.git
+cd Ripple
 ```
-
-Replace the placeholders with your repository URL and actual directory name.
 
 ### 2. Install backend dependencies
 
