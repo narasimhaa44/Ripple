@@ -2,31 +2,35 @@
 import "dotenv/config";
 import { FalkorDB } from "falkordb";
 
-const isProduction = process.env.NODE_ENV === "production";
-
-const prefix = isProduction ? "CLOUD_FALKORDB" : "FALKORDB";
-
-const host = process.env[`${prefix}_HOST`];
-const port = process.env[`${prefix}_PORT`];
-const username = process.env[`${prefix}_USERNAME`];
-const password = process.env[`${prefix}_PASSWORD`];
-const tls = process.env[`${prefix}_TLS`];
+const host = process.env.FALKORDB_HOST;
+const port = process.env.FALKORDB_PORT;
+const username = process.env.FALKORDB_USERNAME;
+const password = process.env.FALKORDB_PASSWORD;
+const tls = process.env.FALKORDB_TLS;
 
 if (!host || !port) {
     throw new Error(
-        `Missing ${prefix}_HOST or ${prefix}_PORT environment variable`
+        "Missing FALKORDB_HOST or FALKORDB_PORT environment variable"
     );
 }
 
 const connectionOptions = {
-    host,
+    host: host.trim(),
     port: Number(port),
 };
+
+if (
+    !Number.isInteger(connectionOptions.port) ||
+    connectionOptions.port < 1 ||
+    connectionOptions.port > 65535
+) {
+    throw new Error("Invalid FALKORDB_PORT configuration.");
+}
 
 if (username) connectionOptions.username = username;
 if (password) connectionOptions.password = password;
 
-if (tls === "true") {
+if (String(tls).toLowerCase() === "true") {
     connectionOptions.socket = { tls: true };
 }
 
