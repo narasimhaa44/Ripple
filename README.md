@@ -218,7 +218,41 @@ This means Order Service depends on Inventory Service.
 
 When Inventory Service is considered failed, Order Service is a potential direct impact candidate. The impact analysis therefore traverses the incoming `DEPENDS_ON` relationships from the failed service to discover its dependents.
 
-### Sample graph
+### Graph visualization: how FalkorDB powers RIPPLE
+
+The diagram below shows the relationship between the agent's investigation workflow and the connected service graph. The service relationships are examples from the documented sample graph; the exact graph contents depend on the seed data loaded into FalkorDB.
+
+```mermaid
+flowchart LR
+    U["User asks: What if Inventory fails?"] --> A["RIPPLE Agent"]
+    A --> T["MCP tool call<br/>analyze_impact / get_dependency_path"]
+    T --> C["Cypher query"]
+    C --> DB[("FalkorDB")]
+
+    subgraph G["Service dependency graph stored in FalkorDB"]
+        SH["Shipping Service"] -->|"DEPENDS_ON"| O["Order Service"]
+        AN["Analytics Service"] -->|"DEPENDS_ON"| O
+        O -->|"DEPENDS_ON"| I["Inventory Service"]
+        P["Payment Service"] -->|"DEPENDS_ON"| O
+    end
+
+    DB --- G
+    G --> R["Structured graph results<br/>affected services, paths, hop counts"]
+    R --> A
+    A --> E["Explanation grounded in graph evidence<br/>plus clearly labeled incident context"]
+```
+
+**How the graph does the work**
+
+1. The agent receives a what-if question and selects an appropriate MCP tool.
+2. The MCP tool runs a Cypher operation against FalkorDB.
+3. FalkorDB traverses the stored relationships and returns graph-derived services, paths, and hop counts.
+4. RIPPLE uses those results to explain potential impact. Local sample incident records may add investigation context, but they are separate from the graph query.
+5. The frontend shows the result and tool trace so the user can inspect how the answer was produced.
+
+**Relationship direction matters:** `A-[:DEPENDS_ON]->B` means A depends on B. In this example, if Inventory Service is considered failed, Order Service is a potential direct impact candidate, while Shipping and Analytics are potential indirect candidates through Order Service. The `get_dependency_path` tool can traverse relationships in either direction to find connectivity; that traversal alone does not prove failure-propagation direction.
+
+**What the visual represents:** The agent's impact decisions should be grounded in the graph results—not invented by the language model. Root-cause hypotheses and local incident records must remain labeled as hypotheses/context, not confirmed graph facts.
 
 The documented seed dataset contains:
 
@@ -310,7 +344,9 @@ ORDER BY hops ASC
 LIMIT 1;
 ```
 
-**Why it matters:** The path explains why a service appears in the impact report instead of presenting only a list of names.
+**Why it matters:** The path explains how two services are connected instead of presenting only a list of names.
+
+The deployed `get_dependency_path` operation may traverse `DEPENDS_ON` relationships in either direction to find connectivity. Treat its result as a connectivity/evidence path, not by itself as proof of the direction in which a failure propagates. Use the directed impact-analysis query and the stored relationship direction when explaining potential impact.
 
 This query illustrates a shortest-by-hop result for the bounded traversal shown. For larger graphs or multiple relationship types, the exact path strategy should match the application's requirements.
 
